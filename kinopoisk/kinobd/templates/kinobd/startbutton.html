@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Кнопка старта{% endblock %}</title>
+    <style>
+        button {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    {% block content %}
+    <button id="startButton">Старт</button>
+    {% endblock %}
+
+    <script>
+        $(document).ready(function() {
+            $("#startButton").click(function() {
+                $.ajax({
+                    url: "{% url 'parse' %}",
+                    success: function(response) {
+                        alert(response);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
