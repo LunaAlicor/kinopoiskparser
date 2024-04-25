@@ -56,13 +56,15 @@ def parse(request):
     # chrome_options.add_argument("--headless")  # отключено для открытия браузера на компьютере
 
     base_urs = "https://www.kinopoisk.ru/"
-    num_pages = 11  # кол-во страниц с фильмами
-
-    urls = [f"{base_urs}lists/movies/top500/?page={i}" for i in range(1, num_pages)]  # генерация списка ссылок
+    num_pages = 17  # кол-во страниц с фильмами
+    other_film_pages = ["box-russia-dollar", "top500", "most-profitable"]
+    urls = [f"{base_urs}lists/movies/{j}/?page={i}" for i in range(1, num_pages + 1) for j in other_film_pages]
+    # генерация списка ссылок
 
     driver = webdriver.Chrome(options=chrome_options)
     # pprint.pprint(urls)  # Вывод ссылок с фильмами
     all_movie_links = []  # список где будут храниться ссылки на все фильмы
+    all_movie_title = set()
     for url in urls:
         driver.get(url)  # открытие странички
         time.sleep(20)  # ожидание чтобы не прилетела капча и прогрузилась страничка
@@ -82,7 +84,7 @@ def parse(request):
     pprint.pprint(all_movie_links)  # вывод ссылок на фильмы
     for i_film in all_movie_links:  # начинаем иттерацию по фильмам
         driver.get(i_film)  # получаем страничку фильма
-        time.sleep(5)  # ждем чтобы не прилетела капча
+        time.sleep(3)  # ждем чтобы не прилетела капча
         html = driver.page_source  # получаем html код страницы фильма
         soup = BeautifulSoup(html, 'html.parser')
         print("#" * 100)  # для разделения вывода фильмов в консоле при желании можно удалить
@@ -91,6 +93,10 @@ def parse(request):
                                {"data-tid": "75209b22"})  # получаем основное название которое указано в кинопоиске
         if title_span:
             title = title_span.text
+            if title in all_movie_title:
+                break
+            else:
+                all_movie_title.add(title)
             print("Название - ", title)
         mpaa_span = soup.find("span", {"data-tid": "5c1ffa33"})  # получаем mpa рейтинг
 
@@ -114,16 +120,20 @@ def parse(request):
             # rating_count = float(rating_count)
             print("Рейтинг Кинопоиска- ", rating_count)
 
-        rating_span = soup.find('div', class_='styles_countBlock__jxRDI').find('span',
-                                                                               class_='styles_count__iOIwD')  # получаем кол-во оценок на кинопоиске
-        if rating_span:
-            rating = rating_span.text
-            # rating = int(rating)
-            print("Кол-во оценок кинопоиск:", rating)
-        else:
-            print("Оценки не найдены.")
-            # rating = 0
+        try:
+            rating_span = soup.find('div', class_='styles_countBlock__jxRDI').find('span',
+                                                                                   class_='styles_count__iOIwD')  # получаем кол-во оценок на кинопоиске
+            if rating_span:
+                rating = rating_span.text
+                # rating = int(rating)
+                print("Кол-во оценок кинопоиск:", rating)
+            else:
+                print("Оценки не найдены.")
+                # rating = 0
+                rating = "-"
+        except AttributeError:
             rating = "-"
+            print("Информация о рейтинге не обнаружена")
 
         imdb_rating_div = soup.find('div', class_='film-sub-rating')  # получаем кол-во оценок imbd
         if imdb_rating_div:
@@ -177,18 +187,27 @@ def parse(request):
             budget = "-"
 
         try:
-            worldwide_gross = soup.find('div', text='Сборы в мире').find_next_sibling('div').text.strip().split(
-                "=")  # общие сборы
+            worldwide_gross = soup.find("div", text="Сборы в мире")
             if worldwide_gross:
-                print("Мировая касса - ", worldwide_gross[1].replace("сборы", ""))
+                worldwide_gross = worldwide_gross.find_next_sibling("div", class_="styles_valueDark__BCk93").text.replace("сборы", "")
+                if "=" in worldwide_gross:
+                    worldwide_gross = worldwide_gross.split("=")
+                    worldwide_gross = worldwide_gross[1]
+                print("Сборы в мире:", worldwide_gross)
+            else:
+                print("Информация о сборах в мире не найдена")
+                worldwide_gross = "-"
+
         except AttributeError:
             print("Информация о мировой кассе не найдена")
-            worldwide_gross = ""
-        except IndexError:
-            worldwide_gross = soup.find('div', text='Сборы в мире').find_next_sibling('div').text.strip().replace(
-                "сборы", "")
-            if worldwide_gross:
-                print("Мировая касса - ", worldwide_gross)
+            worldwide_gross = "-"
+        # except IndexError:
+        #     world_gross_div = soup.find('div', text='Сборы в мире').find_next_sibling('div').text.strip().replace(
+        #         "сборы", "")
+        #     if world_gross_div:
+        #         print("Сборы в мире:", world_gross_div)
+        #     else:
+        #         print("Информация о сборах в мире не найдена.")
 
         try:
             russian_gross_block = soup.find('div', text='Сборы в России').find_next_sibling('div').text.strip().replace(
