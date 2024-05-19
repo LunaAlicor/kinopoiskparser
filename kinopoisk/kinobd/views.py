@@ -57,7 +57,7 @@ def parse(request):
 
     base_urs = "https://www.kinopoisk.ru/"
     num_pages = 17  # кол-во страниц с фильмами
-    other_film_pages = ["box-russia-dollar", "top500", "most-profitable"]
+    other_film_pages = ["country--2"]
     urls = [f"{base_urs}lists/movies/{j}/?page={i}" for i in range(1, num_pages + 1) for j in other_film_pages]
     # генерация списка ссылок
 
@@ -135,47 +135,69 @@ def parse(request):
             rating = "-"
             print("Информация о рейтинге не обнаружена")
 
-        imdb_rating_div = soup.find('div', class_='film-sub-rating')  # получаем кол-во оценок imbd
-        if imdb_rating_div:
-            imdb_ratings_count = imdb_rating_div.find('span', class_='styles_count__89cAz').text
-            # imdb_ratings_count = int(imdb_ratings_count)
-            print("Количество оценок IMDb:", imdb_ratings_count)
-        else:
-            print("Информация о количестве оценок IMDb не найдена.")
+
+        try:
+            imdb_rating_div = soup.find('div', class_='film-sub-rating')  # получаем кол-во оценок imbd
+            if imdb_rating_div:
+                imdb_ratings_count = imdb_rating_div.find('span', class_='styles_count__89cAz').text
+                # imdb_ratings_count = int(imdb_ratings_count)
+                print("Количество оценок IMDb:", imdb_ratings_count)
+            else:
+                print("Информация о количестве оценок IMDb не найдена.")
+                imdb_ratings_count = "-"
+        except AttributeError:
             imdb_ratings_count = "-"
 
-        imdb_rating_div = soup.find('div', class_='film-sub-rating')  # получаем оценки imbd
-        if imdb_rating_div:
-            imdb_rating = imdb_rating_div.find('span', class_='styles_valueSection__0Tcsy').text.split(':')[-1].strip()
-            print("Рейтинг IMDb:", imdb_rating)
-        else:
-            print("Рейтинг IMDb не найден.")
+
+        try:
+            imdb_rating_div = soup.find('div', class_='film-sub-rating')  # получаем оценки imbd
+            if imdb_rating_div:
+                imdb_rating = imdb_rating_div.find('span', class_='styles_valueSection__0Tcsy').text.split(':')[-1].strip()
+                print("Рейтинг IMDb:", imdb_rating)
+            else:
+                print("Рейтинг IMDb не найден.")
+                imdb_rating = "-"
+        except AttributeError:
             imdb_rating = "-"
 
-        rating_div = soup.find('div',
-                               class_='styles_filmRatingBar__Mks7X')  # получаем положительные и отрицательные оценки критиков если таковые имеются
-        if rating_div:
-            positive_ratings = rating_div.find('div', class_='styles_greenBar__NAQmT').text
-            negative_ratings = rating_div.find('div', class_='styles_redBar__b_rlR').text
-            print("Количество положительных оценок критиков:", positive_ratings)
-            print("Количество отрицательных оценок критиков:", negative_ratings)
-        else:
-            print("Информация о количестве оценок не найдена.")
+        try:
+            rating_div = soup.find('div',
+                                   class_='styles_filmRatingBar__Mks7X')  # получаем положительные и отрицательные оценки критиков если таковые имеются
+            if rating_div:
+                positive_ratings = rating_div.find('div', class_='styles_greenBar__NAQmT').text
+                negative_ratings = rating_div.find('div', class_='styles_redBar__b_rlR').text
+                print("Количество положительных оценок критиков:", positive_ratings)
+                print("Количество отрицательных оценок критиков:", negative_ratings)
+            else:
+                print("Информация о количестве оценок не найдена.")
+                positive_ratings = "-"
+                negative_ratings = "-"
+        except AttributeError:
             positive_ratings = "-"
             negative_ratings = "-"
 
-        country_film = soup.find('div', text='Страна').find_next_sibling('div').text.strip()  # получаем страну съемки
-        if country_film:
-            print("Страна съемки - ", country_film)
+        try:
+            country_film = soup.find('div', text='Страна').find_next_sibling('div').text.strip()  # получаем страну съемки
+            if country_film:
+                print("Страна съемки - ", country_film)
+        except AttributeError:
+            print("Страна не найдена")
+            country_film = "-"
 
-        film_genre = soup.find('div', text='Жанр').find_next_sibling('div').text.strip().replace("слова",
-                                                                                                 "")  # получаем жанры фильма
-        if film_genre:
-            print("Жанры фильма - ", film_genre)
+        try:
+            film_genre = soup.find('div', text='Жанр').find_next_sibling('div').text.strip().replace("слова",                                                                                     "")  # получаем жанры фильма
+            if film_genre:
+                print("Жанры фильма - ", film_genre)
+        except AttributeError:
+            film_genre = '-'
 
-        director = soup.find('div', text='Режиссер').find_next_sibling('div').text.strip()  # получаем режиссера фильма
-        if director:
-            print("Режиссер - ", director)
+
+        try:
+            director = soup.find('div', text='Режиссер').find_next_sibling('div').text.strip()  # получаем режиссера фильма
+            if director:
+                print("Режиссер - ", director)
+        except AttributeError:
+            director = "-"
 
         try:
             budget = soup.find('div', text='Бюджет').find_next_sibling(
@@ -190,9 +212,9 @@ def parse(request):
             worldwide_gross = soup.find("div", text="Сборы в мире")
             if worldwide_gross:
                 worldwide_gross = worldwide_gross.find_next_sibling("div", class_="styles_valueDark__BCk93").text.replace("сборы", "")
-                if "=" in worldwide_gross:
-                    worldwide_gross = worldwide_gross.split("=")
-                    worldwide_gross = worldwide_gross[1]
+                # if "=" in worldwide_gross:
+                #     worldwide_gross = worldwide_gross.split("=")
+                #     worldwide_gross = worldwide_gross[1]
                 print("Сборы в мире:", worldwide_gross)
             else:
                 print("Информация о сборах в мире не найдена")
@@ -201,6 +223,20 @@ def parse(request):
         except AttributeError:
             print("Информация о мировой кассе не найдена")
             worldwide_gross = "-"
+
+        if worldwide_gross == "-":
+            try:
+                worldwide_gross_container = soup.find("div", class_="styles_rowLight__P8Y_1")
+                if worldwide_gross_container:
+                    worldwide_gross = worldwide_gross_container.find("a", class_="styles_linkLight__cha3C").text
+                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Сборы в мире:", worldwide_gross)
+                else:
+                    print("Информация о сборах в мире не найдена")
+                    worldwide_gross = "-"
+            except AttributeError:
+                print("Информация о мировой кассе не найдена")
+                worldwide_gross = "-"
+
         # except IndexError:
         #     world_gross_div = soup.find('div', text='Сборы в мире').find_next_sibling('div').text.strip().replace(
         #         "сборы", "")
@@ -228,22 +264,32 @@ def parse(request):
             print("Примьера не обнаружена")
             premiere_date_str = "-"
 
-        duration = soup.find('div', text='Время').find_next_sibling('div').text.strip()  # длительность фильма
-        if duration:
-            duration = duration
-            print("Длительность - ", duration)
 
-        actor_div = soup.find('div', class_='styles_actors__wn_C4')  # получаем список актеров
-        if actor_div:
-            actors_tags = actor_div.find_all('a', class_='styles_link__Act80')
-            actors = [actor_tag.text for actor_tag in actors_tags]
-            actor_str = ""
-            for i_a in actors:
-                actor_str += i_a + " , "  # для последующего сплита при извлечении данных
-            print("Актеры -", actors)
-        else:
-            print("Информация об актерах не найдена.")
-            actors_str = "-"
+        try:
+            duration = soup.find('div', text='Время').find_next_sibling('div').text.strip()  # длительность фильма
+            if duration:
+                duration = duration
+                print("Длительность - ", duration)
+        except AttributeError:
+            director = "-"
+
+
+        try:
+            actor_div = soup.find('div', class_='styles_actors__wn_C4')  # получаем список актеров
+            if actor_div:
+                actors_tags = actor_div.find_all('a', class_='styles_link__Act80')
+                actors = [actor_tag.text for actor_tag in actors_tags]
+                actor_str = ""
+                for i_a in actors:
+                    actor_str += i_a + " , "  # для последующего сплита при извлечении данных
+                print("Актеры -", actors)
+            else:
+                print("Информация об актерах не найдена.")
+                actors_str = "-"
+        except AttributeError:
+            actor_str = '-'
+
+
         # создание экземпляра класса Movie с параметрами выше
         movie = Movie(
             title=title,
